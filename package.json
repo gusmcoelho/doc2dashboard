@@ -1,0 +1,19 @@
+{
+  "name": "doc2dashboard-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Converte documentos (Word, PDF, Excel, CSV) em dashboards visuais automáticos — sem necessidade de programar.",
+  "scripts": {
+    "dev": "concurrently \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "test": "npm --prefix server test",
+    "lint": "npm --prefix server run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.5.3"
+  }
+}
