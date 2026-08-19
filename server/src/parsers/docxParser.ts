@@ -57,12 +57,37 @@ function extractHeadingsFromHtml(html: string): string[] {
 
   while ((match = headingRegex.exec(html)) !== null) {
     const text = match[1].replace(/<[^>]+>/g, '').trim();
-    if (text) {
+    if (text && text.length > 2 && !headings.includes(text)) {
       headings.push(text);
     }
   }
 
   return headings;
+}
+
+function extractParagraphsFromHtml(html: string): string[] {
+  // Remove all tables so table cells are not counted as paragraphs or mixed into prose
+  const withoutTables = html.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, '');
+
+  const paragraphs: string[] = [];
+  const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = pRegex.exec(withoutTables)) !== null) {
+    const cleanText = match[1]
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .trim();
+
+    if (cleanText && cleanText.length > 3) {
+      paragraphs.push(cleanText);
+    }
+  }
+
+  return paragraphs;
 }
 
 export async function parseDocxBuffer(buffer: Buffer, fileName: string): Promise<ParsedDocxOutput> {
@@ -74,21 +99,30 @@ export async function parseDocxBuffer(buffer: Buffer, fileName: string): Promise
   const html = htmlResult.value || '';
   const rawText = rawTextResult.value || '';
 
-  const words = rawText.trim().split(/\s+/).filter(Boolean);
-  const paragraphs = rawText
-    .split(/\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  const tables = extractTablesFromHtml(html);
+  const headings = extractHeadingsFromHtml(html);
+  const cleanParagraphs = extractParagraphsFromHtml(html);
+
+  // If cleanParagraphs found, use them; otherwise fallback to splitting rawText by newlines
+  const narrativeParagraphs =
+    cleanParagraphs.length > 0
+      ? cleanParagraphs
+      : rawText
+          .split(/\n\s*\n/)
+          .map((p) => p.trim())
+          .filter((p) => p.length > 5);
+
+  const narrativeText = narrativeParagraphs.join('\n\n');
+  const words = narrativeText.split(/\s+/).filter(Boolean);
 
   const textSummary: DocumentTextSummary = {
-    wordCount: words.length,
-    characterCount: rawText.length,
-    paragraphsCount: paragraphs.length,
-    preview: rawText.slice(0, 500).trim(),
-    extractedHeadings: extractHeadingsFromHtml(html),
+    wordCount: words.length || rawText.split(/\s+/).filter(Boolean).length,
+    characterCount: narrativeText.length || rawText.length,
+    paragraphsCount: narrativeParagraphs.length || 1,
+    preview: narrativeParagraphs.slice(0, 3).join('\n\n') || rawText.slice(0, 400).trim(),
+    extractedHeadings: headings,
   };
 
-  const tables = extractTablesFromHtml(html);
   let records: Array<Record<string, any>> = [];
 
   if (tables.length > 0) {
@@ -108,7 +142,7 @@ export async function parseDocxBuffer(buffer: Buffer, fileName: string): Promise
 
   if (records.length === 0) {
     const keyValueRows: Array<Record<string, any>> = [];
-    for (const paragraph of paragraphs) {
+    for (const paragraph of narrativeParagraphs) {
       const kvMatch = /^([^:\n]{2,40}):\s*(.+)$/.exec(paragraph);
       if (kvMatch) {
         keyValueRows.push({
@@ -121,7 +155,7 @@ export async function parseDocxBuffer(buffer: Buffer, fileName: string): Promise
     if (keyValueRows.length >= 2) {
       records = keyValueRows;
     } else {
-      records = paragraphs.map((p, idx) => ({
+      records = narrativeParagraphs.map((p, idx) => ({
         Secao: `Parágrafo ${idx + 1}`,
         Texto: p.length > 100 ? `${p.slice(0, 100)}...` : p,
         Caracteres: p.length,

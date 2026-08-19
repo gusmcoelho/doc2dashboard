@@ -120,13 +120,30 @@ export async function parsePdfBuffer(buffer: Buffer, fileName: string): Promise<
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
+
+  // Extract meaningful narrative paragraphs (grouped by double newlines or non-table lines)
+  const rawParagraphs = rawText
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/\s+/g, ' ').trim())
+    .filter((p) => p.length > 10 && !p.includes('|') && !p.includes('\t'));
+
+  const headings: string[] = [];
+  for (const line of lines) {
+    if (/^[#A-Z0-9\s—:-]{4,60}$/.test(line) && line.length < 50 && !line.includes('|')) {
+      if (!headings.includes(line)) {
+        headings.push(line);
+      }
+    }
+  }
+
   const words = rawText.trim().split(/\s+/).filter(Boolean);
 
   const textSummary: DocumentTextSummary = {
     wordCount: words.length,
     characterCount: rawText.length,
-    paragraphsCount: lines.length,
-    preview: rawText.slice(0, 500).trim(),
+    paragraphsCount: rawParagraphs.length || 1,
+    preview: rawParagraphs.slice(0, 3).join('\n\n') || rawText.slice(0, 400).trim(),
+    extractedHeadings: headings.slice(0, 6),
   };
 
   let records = extractTableFromLines(lines);
