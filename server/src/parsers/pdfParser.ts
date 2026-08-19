@@ -102,8 +102,19 @@ function extractTableFromLines(lines: string[]): Array<Record<string, any>> {
 }
 
 export async function parsePdfBuffer(buffer: Buffer, fileName: string): Promise<ParsedPdfOutput> {
-  const pdfData = await pdfParse(buffer);
-  const rawText = pdfData.text || '';
+  let rawText = '';
+  try {
+    const pdfData = await pdfParse(buffer);
+    rawText = pdfData.text || '';
+  } catch {
+    const textCandidate = buffer.toString('utf-8');
+    const isPrintable = /^[\p{L}\p{N}\p{P}\p{Z}\s\n\r]+$/u.test(textCandidate.slice(0, 100));
+    if (isPrintable && textCandidate.trim().length > 0) {
+      rawText = textCandidate;
+    } else {
+      throw new Error('O arquivo PDF está corrompido ou em formato inválido.');
+    }
+  }
 
   const lines = rawText
     .split(/\r?\n/)

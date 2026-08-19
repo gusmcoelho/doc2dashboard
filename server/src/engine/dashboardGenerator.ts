@@ -8,6 +8,13 @@ import {
 } from '../types';
 import { analyzeDataset } from './statisticsCalculator';
 
+function normalizeStr(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 function selectPrimaryNumericColumn(columns: ColumnMeta[]): ColumnMeta | undefined {
   const numericCols = columns.filter((c) => c.type === 'numeric' && c.sum !== undefined);
   if (numericCols.length === 0) return undefined;
@@ -16,17 +23,19 @@ function selectPrimaryNumericColumn(columns: ColumnMeta[]): ColumnMeta | undefin
     'total',
     'receita',
     'revenue',
+    'faturamento',
     'venda',
     'sales',
-    'faturamento',
+    'salario',
+    'salary',
     'valor',
     'price',
     'preco',
     'amount',
     'lucro',
     'profit',
-    'salario',
-    'salary',
+    'custo',
+    'cost',
     'score',
     'pontuacao',
     'quantidade',
@@ -35,7 +44,7 @@ function selectPrimaryNumericColumn(columns: ColumnMeta[]): ColumnMeta | undefin
   ];
 
   for (const keyword of priorityKeywords) {
-    const match = numericCols.find((c) => c.name.toLowerCase().includes(keyword));
+    const match = numericCols.find((c) => normalizeStr(c.name).includes(keyword));
     if (match) return match;
   }
 
@@ -52,18 +61,15 @@ function selectPrimaryCategoricalColumn(columns: ColumnMeta[]): ColumnMeta | und
   }
 
   const priorityKeywords = [
-    'categoria',
-    'category',
-    'departamento',
-    'department',
-    'setor',
     'regiao',
     'region',
-    'status',
+    'departamento',
+    'department',
     'produto',
     'product',
-    'tipo',
-    'type',
+    'categoria',
+    'category',
+    'setor',
     'cliente',
     'segmento',
     'cidade',
@@ -71,12 +77,15 @@ function selectPrimaryCategoricalColumn(columns: ColumnMeta[]): ColumnMeta | und
     'estado',
     'pais',
     'country',
+    'tipo',
+    'type',
     'mes',
     'month',
+    'status',
   ];
 
   for (const keyword of priorityKeywords) {
-    const match = categoricalCols.find((c) => c.name.toLowerCase().includes(keyword));
+    const match = categoricalCols.find((c) => normalizeStr(c.name).includes(keyword));
     if (match) return match;
   }
 
@@ -129,9 +138,9 @@ export function generateDashboard(
 
     summaryCards.push({
       id: 'metric-sum',
-      title: `Soma: ${primaryNumeric.name}`,
+      title: primaryNumeric.name,
       value: formattedSum,
-      subtitle: `Mín: ${primaryNumeric.min?.toLocaleString('pt-BR')} | Máx: ${primaryNumeric.max?.toLocaleString('pt-BR')}`,
+      subtitle: `Soma total (Mín: ${primaryNumeric.min?.toLocaleString('pt-BR')} | Máx: ${primaryNumeric.max?.toLocaleString('pt-BR')})`,
       type: 'total',
     });
 
@@ -142,9 +151,9 @@ export function generateDashboard(
 
       summaryCards.push({
         id: 'metric-avg',
-        title: `Média: ${primaryNumeric.name}`,
+        title: primaryNumeric.name,
         value: formattedAvg,
-        subtitle: `Mediana: ${primaryNumeric.median?.toLocaleString('pt-BR')}`,
+        subtitle: `Média por registro (Mediana: ${primaryNumeric.median?.toLocaleString('pt-BR')})`,
         type: 'average',
       });
     }
@@ -158,9 +167,9 @@ export function generateDashboard(
     const top = primaryCategorical.topCategories[0];
     summaryCards.push({
       id: 'top-category',
-      title: `Destaque: ${primaryCategorical.name}`,
+      title: primaryCategorical.name,
       value: top.category || 'N/A',
-      subtitle: `${top.count} ocorrências (${top.percentage}%)`,
+      subtitle: `Mais frequente: ${top.count} ocorrências (${top.percentage}%)`,
       type: 'highlight',
     });
   }
@@ -168,9 +177,9 @@ export function generateDashboard(
   if (dateCol && dateCol.min && dateCol.max) {
     summaryCards.push({
       id: 'date-span',
-      title: `Período: ${dateCol.name}`,
+      title: dateCol.name,
       value: `${dateCol.min} até ${dateCol.max}`,
-      subtitle: `${dateCol.uniqueCount} datas distintas`,
+      subtitle: `Intervalo com ${dateCol.uniqueCount} datas distintas`,
       type: 'dateRange',
     });
   } else if (columns.length > 1) {
@@ -181,9 +190,9 @@ export function generateDashboard(
       const secondary = numericCols[0];
       summaryCards.push({
         id: 'secondary-metric',
-        title: `Média: ${secondary.name}`,
+        title: secondary.name,
         value: secondary.avg?.toLocaleString('pt-BR') ?? '0',
-        subtitle: `Soma: ${secondary.sum?.toLocaleString('pt-BR')}`,
+        subtitle: `Média por registro (Soma: ${secondary.sum?.toLocaleString('pt-BR')})`,
         type: 'metric',
       });
     }
@@ -235,7 +244,7 @@ export function generateDashboard(
 
     charts.push({
       id: 'bar-category-counts',
-      title: `Distribuição de ${primaryCategorical.name}`,
+      title: primaryCategorical.name,
       type: 'bar',
       xAxisKey: primaryCategorical.name,
       yAxisKeys: ['Contagem'],
@@ -276,7 +285,7 @@ export function generateDashboard(
 
     charts.push({
       id: 'pie-distribution',
-      title: `Proporção por ${pieCategorical.name}`,
+      title: pieCategorical.name,
       type: 'pie',
       xAxisKey: 'name',
       yAxisKeys: ['value'],
@@ -310,12 +319,12 @@ export function generateDashboard(
     if (sortedDateData.length > 1) {
       charts.push({
         id: 'line-temporal-trend',
-        title: `Evolução Temporal de ${primaryNumeric.name}`,
+        title: `${primaryNumeric.name} por ${dateCol.name}`,
         type: 'line',
         xAxisKey: dateCol.name,
         yAxisKeys: [primaryNumeric.name],
         data: sortedDateData,
-        description: `Tendência de ${primaryNumeric.name} ao longo do tempo`,
+        description: `Evolução de ${primaryNumeric.name} ao longo de ${dateCol.name}`,
       });
     }
   } else if (primaryNumeric && normalizedRecords.length > 0) {
@@ -332,7 +341,7 @@ export function generateDashboard(
     if (sampleTrend.length > 1) {
       charts.push({
         id: 'area-sequence-trend',
-        title: `Sequência de ${primaryNumeric.name}`,
+        title: `${primaryNumeric.name} (Sequencial)`,
         type: 'area',
         xAxisKey: 'item',
         yAxisKeys: [primaryNumeric.name],

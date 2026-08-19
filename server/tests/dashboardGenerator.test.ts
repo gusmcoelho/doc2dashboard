@@ -21,12 +21,33 @@ describe('dashboardGenerator', () => {
     expect(countCard).toBeDefined();
     expect(countCard?.value).toBe('4');
 
+    const totalCard = dashboard.summaryCards.find((c) => c.type === 'total');
+    expect(totalCard?.title).toBe('Vendas');
+
+    const highlightCard = dashboard.summaryCards.find((c) => c.type === 'highlight');
+    expect(highlightCard?.title).toBe('Regiao');
+
     expect(dashboard.charts.length).toBeGreaterThanOrEqual(2);
     const barChart = dashboard.charts.find((c) => c.type === 'bar');
     expect(barChart).toBeDefined();
+    expect(barChart?.title).toBe('Vendas por Regiao');
     expect(barChart?.data.length).toBeGreaterThan(0);
 
     expect(dashboard.rawRecords.length).toBe(4);
+  });
+
+  it('should preserve complex original column names like Valor Total (R$) without rewriting', () => {
+    const complexRecords = [
+      { 'Região de Entrega': 'Sul', 'Valor Total (R$)': 5400, Quantidade: 12 },
+      { 'Região de Entrega': 'Norte', 'Valor Total (R$)': 8200, Quantidade: 20 },
+    ];
+
+    const dashboard = generateDashboard('pedido.csv', 'csv', 500, complexRecords);
+    const totalCard = dashboard.summaryCards.find((c) => c.type === 'total');
+    expect(totalCard?.title).toBe('Valor Total (R$)');
+
+    const barChart = dashboard.charts.find((c) => c.type === 'bar');
+    expect(barChart?.title).toBe('Valor Total (R$) por Região de Entrega');
   });
 
   it('should include text summary when provided', () => {

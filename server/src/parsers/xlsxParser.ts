@@ -24,6 +24,7 @@ export function parseXlsxBuffer(
 
   const workbook = XLSX.read(buffer, {
     type: 'buffer',
+    codepage: 65001,
     cellDates: true,
     cellNF: false,
     cellText: false,
