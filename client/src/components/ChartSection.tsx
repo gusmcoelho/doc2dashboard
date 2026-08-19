@@ -103,8 +103,6 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                 innerRadius={55}
                 outerRadius={95}
                 paddingAngle={3}
-                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                labelLine={false}
               >
                 {chart.data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -199,8 +197,11 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
       </div>
 
       <div className="charts-grid">
-        {charts.map((chart) => (
-          <div key={chart.id} className="chart-card">
+        {charts.map((chart, idx) => (
+          <div
+            key={chart.id}
+            className={`chart-card ${charts.length % 2 === 1 && idx === charts.length - 1 ? 'chart-card-full' : ''}`}
+          >
             <div className="chart-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {getChartIcon(chart.type)}
