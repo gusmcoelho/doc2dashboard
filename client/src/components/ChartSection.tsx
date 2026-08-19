@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChartConfig } from '../types';
+import React, { useState, useMemo } from 'react';
+import { ChartConfig, ColumnMeta } from '../types';
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,10 +14,12 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
-import { BarChart3, PieChart as PieIcon, TrendingUp } from 'lucide-react';
+import { BarChart3, PieChart as PieIcon, TrendingUp, SlidersHorizontal, Info } from 'lucide-react';
 
 interface ChartSectionProps {
   charts: ChartConfig[];
+  columns: ColumnMeta[];
+  records: Array<Record<string, any>>;
 }
 
 const COLORS = ['#2563eb', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
@@ -33,8 +35,59 @@ const customTooltipStyle = {
   padding: '8px 14px',
 };
 
-export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
-  if (!charts || charts.length === 0) return null;
+export const ChartSection: React.FC<ChartSectionProps> = ({ charts, columns, records }) => {
+  const categoricalColumns = useMemo(
+    () => columns.filter((c) => c.type === 'categorical' || c.type === 'text' || c.type === 'date'),
+    [columns]
+  );
+  const numericColumns = useMemo(() => columns.filter((c) => c.type === 'numeric'), [columns]);
+
+  const [selectedX, setSelectedX] = useState<string>(
+    categoricalColumns[0]?.name || columns[0]?.name || ''
+  );
+  const [selectedY, setSelectedY] = useState<string>(numericColumns[0]?.name || '');
+  const [aggregation, setAggregation] = useState<'sum' | 'avg' | 'count'>('sum');
+  const [customChartType, setCustomChartType] = useState<'bar' | 'area' | 'pie'>('bar');
+
+  const customChartData = useMemo(() => {
+    if (!selectedX || records.length === 0) return [];
+
+    const map = new Map<string, { sum: number; count: number }>();
+
+    for (const row of records) {
+      const key = String(row[selectedX] ?? 'Outros').trim() || 'N/A';
+      const val = typeof row[selectedY] === 'number' ? row[selectedY] : 0;
+      const current = map.get(key) || { sum: 0, count: 0 };
+      map.set(key, {
+        sum: current.sum + val,
+        count: current.count + 1,
+      });
+    }
+
+    return Array.from(map.entries())
+      .sort((a, b) => {
+        const valA = aggregation === 'sum' ? a[1].sum : aggregation === 'avg' ? a[1].sum / a[1].count : a[1].count;
+        const valB = aggregation === 'sum' ? b[1].sum : aggregation === 'avg' ? b[1].sum / b[1].count : b[1].count;
+        return valB - valA;
+      })
+      .slice(0, 10)
+      .map(([cat, stats]) => {
+        let value = stats.sum;
+        if (aggregation === 'avg') {
+          value = Number((stats.sum / (stats.count || 1)).toFixed(2));
+        } else if (aggregation === 'count') {
+          value = stats.count;
+        } else {
+          value = Number(stats.sum.toFixed(2));
+        }
+        return {
+          [selectedX]: cat,
+          [selectedY || 'Contagem']: value,
+          valor: value,
+          quantidade: stats.count,
+        };
+      });
+  }, [records, selectedX, selectedY, aggregation]);
 
   const getChartIcon = (type: string) => {
     switch (type) {
@@ -48,12 +101,19 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
     }
   };
 
-  const renderChart = (chart: ChartConfig) => {
+  const formatNumber = (val: any) => {
+    if (typeof val === 'number') {
+      return val.toLocaleString('pt-BR');
+    }
+    return String(val);
+  };
+
+  const renderSingleChart = (chart: ChartConfig) => {
     switch (chart.type) {
       case 'bar':
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chart.data} margin={{ top: 15, right: 20, left: -10, bottom: 25 }}>
+          <ResponsiveContainer width="100%" height={290}>
+            <BarChart data={chart.data} margin={{ top: 15, right: 20, left: -5, bottom: 25 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey={chart.xAxisKey}
@@ -65,8 +125,12 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                 angle={-20}
                 textAnchor="end"
               />
-              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} />
-              <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: '#f8fafc' }} />
+              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} tickFormatter={formatNumber} />
+              <Tooltip
+                contentStyle={customTooltipStyle}
+                cursor={{ fill: '#f8fafc' }}
+                formatter={(val: any) => [formatNumber(val), chart.yAxisKeys[0] || 'Valor']}
+              />
               {chart.yAxisKeys.map((key) => (
                 <Bar
                   key={key}
@@ -83,7 +147,7 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
       case 'pie':
         return (
           <div className="donut-split-layout">
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
                   data={chart.data}
@@ -91,15 +155,18 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                   nameKey={chart.xAxisKey || 'name'}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={95}
+                  innerRadius={55}
+                  outerRadius={90}
                   paddingAngle={3}
                 >
                   {chart.data.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={customTooltipStyle} />
+                <Tooltip
+                  contentStyle={customTooltipStyle}
+                  formatter={(val: any) => [formatNumber(val), 'Quantidade / Valor']}
+                />
               </PieChart>
             </ResponsiveContainer>
 
@@ -115,8 +182,12 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                         <span>{item.name || item[chart.xAxisKey]}</span>
                       </span>
                       <span className="donut-item-value">
-                        {typeof item.value === 'number' ? item.value.toLocaleString('pt-BR') : item.value}
-                        {pct > 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '6px' }}>({pct}%)</span>}
+                        {typeof item.value === 'number' ? formatNumber(item.value) : item.value}
+                        {pct > 0 && (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '6px' }}>
+                            ({pct}%)
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className="donut-track">
@@ -136,10 +207,10 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
       case 'area':
       default:
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chart.data} margin={{ top: 15, right: 20, left: -10, bottom: 25 }}>
+          <ResponsiveContainer width="100%" height={290}>
+            <AreaChart data={chart.data} margin={{ top: 15, right: 20, left: -5, bottom: 25 }}>
               <defs>
-                <linearGradient id="areaGradientPrimary" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={`areaGrad-${chart.id}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
                 </linearGradient>
@@ -154,8 +225,11 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                 angle={-20}
                 textAnchor="end"
               />
-              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} />
-              <Tooltip contentStyle={customTooltipStyle} />
+              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} tickFormatter={formatNumber} />
+              <Tooltip
+                contentStyle={customTooltipStyle}
+                formatter={(val: any) => [formatNumber(val), chart.yAxisKeys[0] || 'Valor']}
+              />
               {chart.yAxisKeys.map((key) => (
                 <Area
                   key={key}
@@ -164,7 +238,7 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                   stroke="#2563eb"
                   strokeWidth={3}
                   fillOpacity={1}
-                  fill="url(#areaGradientPrimary)"
+                  fill={`url(#areaGrad-${chart.id})`}
                   dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#ffffff' }}
                   activeDot={{ r: 6, fill: '#1d4ed8' }}
                 />
@@ -179,13 +253,106 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
     <section className="dashboard-section">
       <div className="section-header">
         <div>
-          <h2 className="section-title">Gráficos & Visualizações</h2>
+          <h2 className="section-title">Análise Visual dos Dados</h2>
           <p className="section-subtitle">
-            Visualizações geradas automaticamente para cruzar dados numéricos e categorias
-            identificadas no seu documento
+            Gráficos automáticos e explorador interativo para analisar qualquer coluna do seu documento
           </p>
         </div>
       </div>
+
+      {numericColumns.length > 0 && categoricalColumns.length > 0 && (
+        <div className="chart-card chart-card-full" style={{ marginBottom: '1.35rem' }}>
+          <div className="chart-header">
+            <div className="chart-header-left">
+              <div className="chart-icon-box" style={{ background: '#ecfdf5', color: '#10b981' }}>
+                <SlidersHorizontal size={18} />
+              </div>
+              <div className="chart-title-block">
+                <h3 className="chart-title">Explorador Interativo de Dados</h3>
+                <span className="chart-desc">CRUZE QUALQUER COLUNA DO SEU DOCUMENTO</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>Eixo X:</span>
+                <select
+                  className="sheet-selector"
+                  value={selectedX}
+                  onChange={(e) => setSelectedX(e.target.value)}
+                >
+                  {categoricalColumns.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.name} ({c.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>Métrica Y:</span>
+                <select
+                  className="sheet-selector"
+                  value={selectedY}
+                  onChange={(e) => setSelectedY(e.target.value)}
+                >
+                  {numericColumns.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>Cálculo:</span>
+                <select
+                  className="sheet-selector"
+                  value={aggregation}
+                  onChange={(e: any) => setAggregation(e.target.value)}
+                >
+                  <option value="sum">Soma Total</option>
+                  <option value="avg">Média</option>
+                  <option value="count">Contagem de Linhas</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>Visualização:</span>
+                <select
+                  className="sheet-selector"
+                  value={customChartType}
+                  onChange={(e: any) => setCustomChartType(e.target.value)}
+                >
+                  <option value="bar">Barras</option>
+                  <option value="area">Área / Linha</option>
+                  <option value="pie">Pizza / Donut</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: '0.25rem 0 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.825rem', color: 'var(--primary-blue)', fontWeight: 600, marginBottom: '0.75rem' }}>
+              <Info size={15} />
+              <span>
+                Exibindo a <strong>{aggregation === 'sum' ? 'Soma' : aggregation === 'avg' ? 'Média' : 'Contagem'}</strong> da coluna <strong>"{selectedY}"</strong> agrupada por cada <strong>"{selectedX}"</strong> (Top 10).
+              </span>
+            </div>
+
+            <div className="chart-container">
+              {renderSingleChart({
+                id: 'custom-interactive',
+                title: `${selectedY} por ${selectedX}`,
+                type: customChartType,
+                xAxisKey: selectedX,
+                yAxisKeys: [selectedY || 'Contagem'],
+                data: customChartData,
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="charts-grid">
         {charts.map((chart, idx) => (
@@ -202,7 +369,7 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                 </div>
               </div>
             </div>
-            <div className="chart-container">{renderChart(chart)}</div>
+            <div className="chart-container">{renderSingleChart(chart)}</div>
           </div>
         ))}
       </div>

@@ -202,7 +202,11 @@ export const App: React.FC = () => {
 
             <SummaryCards cards={dashboard.summaryCards} />
 
-            <ChartSection charts={dashboard.charts} />
+            <ChartSection
+              charts={dashboard.charts}
+              columns={dashboard.columns}
+              records={dashboard.rawRecords}
+            />
 
             <TextInsights summary={dashboard.textSummary} />
 
