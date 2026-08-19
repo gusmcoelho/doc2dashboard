@@ -17,33 +17,47 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { BarChart3, PieChart as PieIcon, TrendingUp } from 'lucide-react';
 
 interface ChartSectionProps {
   charts: ChartConfig[];
 }
 
 const COLORS = [
-  '#06b6d4',
-  '#8b5cf6',
-  '#10b981',
-  '#f59e0b',
-  '#f43f5e',
-  '#3b82f6',
-  '#ec4899',
-  '#14b8a6',
+  '#2563eb',
+  '#7c3aed',
+  '#059669',
+  '#d97706',
+  '#e11d48',
+  '#0284c7',
+  '#db2777',
+  '#0d9488',
 ];
 
 const customTooltipStyle = {
-  backgroundColor: '#111827',
-  border: '1px solid rgba(255, 255, 255, 0.15)',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e2e8f0',
   borderRadius: '8px',
-  color: '#f8fafc',
+  color: '#0f172a',
   fontSize: '0.85rem',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+  padding: '8px 12px',
 };
 
 export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
   if (!charts || charts.length === 0) return null;
+
+  const getChartIcon = (type: string) => {
+    switch (type) {
+      case 'pie':
+        return <PieIcon size={18} className="chart-icon-header" />;
+      case 'line':
+      case 'area':
+        return <TrendingUp size={18} className="chart-icon-header" />;
+      default:
+        return <BarChart3 size={18} className="chart-icon-header" />;
+    }
+  };
 
   const renderChart = (chart: ChartConfig) => {
     switch (chart.type) {
@@ -51,17 +65,17 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
         return (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chart.data} margin={{ top: 10, right: 20, left: 0, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey={chart.xAxisKey}
-                stroke="#94a3b8"
+                stroke="#64748b"
                 fontSize={11}
                 tickLine={false}
                 interval={0}
                 angle={-20}
                 textAnchor="end"
               />
-              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
               <Tooltip contentStyle={customTooltipStyle} />
               <Legend wrapperStyle={{ fontSize: '0.8rem', paddingTop: '8px' }} />
               {chart.yAxisKeys.map((key, idx) => (
@@ -88,7 +102,7 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                 cy="50%"
                 innerRadius={55}
                 outerRadius={95}
-                paddingAngle={4}
+                paddingAngle={3}
                 label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                 labelLine={false}
               >
@@ -106,16 +120,16 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
         return (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chart.data} margin={{ top: 10, right: 20, left: 0, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey={chart.xAxisKey}
-                stroke="#94a3b8"
+                stroke="#64748b"
                 fontSize={11}
                 tickLine={false}
                 angle={-20}
                 textAnchor="end"
               />
-              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
               <Tooltip contentStyle={customTooltipStyle} />
               <Legend wrapperStyle={{ fontSize: '0.8rem', paddingTop: '8px' }} />
               {chart.yAxisKeys.map((key, idx) => (
@@ -124,7 +138,7 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                   type="monotone"
                   dataKey={key}
                   stroke={COLORS[idx % COLORS.length]}
-                  strokeWidth={3}
+                  strokeWidth={2.5}
                   dot={{ r: 4, fill: COLORS[idx % COLORS.length] }}
                 />
               ))}
@@ -139,20 +153,20 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
             <AreaChart data={chart.data} margin={{ top: 10, right: 20, left: 0, bottom: 25 }}>
               <defs>
                 <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey={chart.xAxisKey}
-                stroke="#94a3b8"
+                stroke="#64748b"
                 fontSize={11}
                 tickLine={false}
                 angle={-20}
                 textAnchor="end"
               />
-              <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+              <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
               <Tooltip contentStyle={customTooltipStyle} />
               <Legend wrapperStyle={{ fontSize: '0.8rem', paddingTop: '8px' }} />
               {chart.yAxisKeys.map((key) => (
@@ -160,7 +174,7 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
                   key={key}
                   type="monotone"
                   dataKey={key}
-                  stroke="#06b6d4"
+                  stroke="#2563eb"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#areaGradient)"
@@ -173,18 +187,33 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
   };
 
   return (
-    <div className="charts-grid">
-      {charts.map((chart) => (
-        <div key={chart.id} className="chart-card">
-          <div className="chart-header">
-            <div>
-              <h3 className="chart-title">{chart.title}</h3>
-              {chart.description && <p className="chart-desc">{chart.description}</p>}
-            </div>
-          </div>
-          <div className="chart-container">{renderChart(chart)}</div>
+    <section className="dashboard-section">
+      <div className="section-header">
+        <div>
+          <h2 className="section-title">Gráficos & Visualizações</h2>
+          <p className="section-subtitle">
+            Visualizações geradas automaticamente para cruzar dados numéricos e categorias
+            identificadas no seu documento
+          </p>
         </div>
-      ))}
-    </div>
+      </div>
+
+      <div className="charts-grid">
+        {charts.map((chart) => (
+          <div key={chart.id} className="chart-card">
+            <div className="chart-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {getChartIcon(chart.type)}
+                <div>
+                  <h3 className="chart-title">{chart.title}</h3>
+                  {chart.description && <p className="chart-desc">{chart.description}</p>}
+                </div>
+              </div>
+            </div>
+            <div className="chart-container">{renderChart(chart)}</div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 };

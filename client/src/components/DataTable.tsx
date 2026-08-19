@@ -104,120 +104,137 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
   if (!records || records.length === 0) return null;
 
   return (
-    <div className="table-card">
-      <div className="table-header-controls">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <TableIcon size={18} className="text-cyan" />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            Tabela de Dados Brutos
-          </h3>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            ({records.length.toLocaleString('pt-BR')} registros)
-          </span>
+    <section className="dashboard-section">
+      <div className="section-header">
+        <div>
+          <h2 className="section-title">Dados Brutos</h2>
+          <p className="section-subtitle">
+            Esta tabela mostra os dados extraídos do seu arquivo com tipos de coluna detectados
+            automaticamente
+          </p>
         </div>
+      </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <Search
-              size={15}
-              style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }}
-            />
-            <input
-              type="text"
-              placeholder="Buscar em todas as colunas..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="table-search-input"
-              style={{ paddingLeft: '32px' }}
-            />
+      <div className="table-card">
+        <div className="table-header-controls">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <TableIcon size={18} className="text-primary-accent" />
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Registros carregados: {records.length.toLocaleString('pt-BR')} linhas
+            </span>
           </div>
 
-          <button
-            onClick={exportToJson}
-            className="btn btn-secondary"
-            title="Exportar dados tratados em JSON"
-          >
-            <Download size={14} />
-            <span>JSON</span>
-          </button>
-        </div>
-      </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Search
+                size={15}
+                style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }}
+              />
+              <input
+                type="text"
+                placeholder="Buscar em todas as colunas..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="table-search-input"
+                style={{ paddingLeft: '32px' }}
+              />
+            </div>
 
-      <div className="table-wrapper">
-        <table className="data-table">
-          <thead>
-            <tr>
-              {columns.map((col) => (
-                <th key={col.name} onClick={() => handleSort(col.name)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <span>{col.name}</span>
-                    <span className={`col-type-tag ${getColTypeClass(col.type)}`}>{col.type}</span>
-                    <ArrowUpDown size={12} style={{ opacity: sortColumn === col.name ? 1 : 0.3 }} />
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedRecords.map((row, rowIdx) => (
-              <tr key={rowIdx}>
+            <button
+              onClick={exportToJson}
+              className="btn btn-secondary"
+              title="Exportar dados tratados em JSON"
+            >
+              <Download size={14} />
+              <span>Exportar JSON</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
                 {columns.map((col) => (
-                  <td key={col.name}>
-                    {row[col.name] !== undefined && row[col.name] !== null
-                      ? String(row[col.name])
-                      : '-'}
-                  </td>
+                  <th key={col.name} onClick={() => handleSort(col.name)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span>{col.name}</span>
+                      <span
+                        className={`col-type-tag ${getColTypeClass(col.type)}`}
+                        title={`Tipo detectado: ${col.type}`}
+                      >
+                        {col.type}
+                      </span>
+                      <ArrowUpDown
+                        size={12}
+                        style={{ opacity: sortColumn === col.name ? 1 : 0.3 }}
+                      />
+                    </div>
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="pagination-controls">
-        <div>
-          Exibindo {Math.min((currentPage - 1) * pageSize + 1, sortedRecords.length)} a{' '}
-          {Math.min(currentPage * pageSize, sortedRecords.length)} de {sortedRecords.length}
+            </thead>
+            <tbody>
+              {paginatedRecords.map((row, rowIdx) => (
+                <tr key={rowIdx}>
+                  {columns.map((col) => (
+                    <td key={col.name}>
+                      {row[col.name] !== undefined && row[col.name] !== null
+                        ? String(row[col.name])
+                        : '-'}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="sheet-selector"
-          >
-            <option value={10}>10 por página</option>
-            <option value={25}>25 por página</option>
-            <option value={50}>50 por página</option>
-          </select>
+        <div className="pagination-controls">
+          <div>
+            Exibindo {Math.min((currentPage - 1) * pageSize + 1, sortedRecords.length)} a{' '}
+            {Math.min(currentPage * pageSize, sortedRecords.length)} de {sortedRecords.length}
+          </div>
 
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="btn btn-ghost"
-            style={{ padding: '0.35rem 0.6rem' }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span>
-            {currentPage} / {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="btn btn-ghost"
-            style={{ padding: '0.35rem 0.6rem' }}
-          >
-            <ChevronRight size={16} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="sheet-selector"
+            >
+              <option value={10}>10 por página</option>
+              <option value={25}>25 por página</option>
+              <option value={50}>50 por página</option>
+            </select>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="btn btn-ghost"
+              style={{ padding: '0.35rem 0.6rem' }}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span>
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="btn btn-ghost"
+              style={{ padding: '0.35rem 0.6rem' }}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

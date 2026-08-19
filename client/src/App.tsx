@@ -141,7 +141,7 @@ export const App: React.FC = () => {
             <div className="hero-section">
               <h1 className="hero-title">
                 Transforme qualquer documento em um{' '}
-                <span className="gradient-text">Dashboard Visual</span>
+                <span className="highlight">Dashboard Visual</span>
               </h1>
               <p className="hero-subtitle">
                 Faça upload de planilhas Excel, CSVs, documentos Word ou PDFs e gere automaticamente
