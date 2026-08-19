@@ -1,13 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ColumnMeta } from '../types';
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
-  Download,
-  Table as TableIcon,
-} from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Download, Table as TableIcon } from 'lucide-react';
 
 interface DataTableProps {
   columns: ColumnMeta[];
@@ -41,9 +34,8 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
     const lowerSearch = searchTerm.toLowerCase();
 
     return records.filter((row) =>
-      Object.values(row).some(
-        (val) =>
-          val !== null && val !== undefined && String(val).toLowerCase().includes(lowerSearch)
+      Object.values(row).some((val) =>
+        val !== null && val !== undefined && String(val).toLowerCase().includes(lowerSearch)
       )
     );
   }, [records, searchTerm]);
@@ -76,8 +68,7 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
   }, [sortedRecords, currentPage, pageSize]);
 
   const exportToJson = () => {
-    const dataStr =
-      'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(records, null, 2));
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(records, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
     downloadAnchor.setAttribute('download', `${fileName.replace(/\.[^/.]+$/, '')}_dados.json`);
@@ -109,27 +100,30 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
         <div>
           <h2 className="section-title">Dados Brutos</h2>
           <p className="section-subtitle">
-            Esta tabela mostra os dados extraídos do seu arquivo com tipos de coluna detectados
-            automaticamente
+            Esta tabela mostra os dados extraídos do seu arquivo com tipos de coluna detectados automaticamente
           </p>
         </div>
       </div>
 
       <div className="table-card">
         <div className="table-header-controls">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <TableIcon size={18} className="text-primary-accent" />
-            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-              Registros carregados: {records.length.toLocaleString('pt-BR')} linhas
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="chart-icon-box" style={{ width: '34px', height: '34px' }}>
+              <TableIcon size={17} />
+            </div>
+            <div>
+              <span style={{ fontSize: '0.925rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Registros Carregados
+              </span>
+              <span style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginLeft: '8px' }}>
+                ({records.length.toLocaleString('pt-BR')} linhas)
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search
-                size={15}
-                style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }}
-              />
+              <Search size={15} style={{ position: 'absolute', left: '12px', color: 'var(--text-muted)' }} />
               <input
                 type="text"
                 placeholder="Buscar em todas as colunas..."
@@ -139,15 +133,11 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
                   setCurrentPage(1);
                 }}
                 className="table-search-input"
-                style={{ paddingLeft: '32px' }}
+                style={{ paddingLeft: '34px' }}
               />
             </div>
 
-            <button
-              onClick={exportToJson}
-              className="btn btn-secondary"
-              title="Exportar dados tratados em JSON"
-            >
+            <button onClick={exportToJson} className="btn btn-secondary" title="Exportar dados tratados em JSON">
               <Download size={14} />
               <span>Exportar JSON</span>
             </button>
@@ -162,16 +152,10 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
                   <th key={col.name} onClick={() => handleSort(col.name)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <span>{col.name}</span>
-                      <span
-                        className={`col-type-tag ${getColTypeClass(col.type)}`}
-                        title={`Tipo detectado: ${col.type}`}
-                      >
+                      <span className={`col-type-tag ${getColTypeClass(col.type)}`} title={`Tipo detectado: ${col.type}`}>
                         {col.type}
                       </span>
-                      <ArrowUpDown
-                        size={12}
-                        style={{ opacity: sortColumn === col.name ? 1 : 0.3 }}
-                      />
+                      <ArrowUpDown size={12} style={{ opacity: sortColumn === col.name ? 1 : 0.25 }} />
                     </div>
                   </th>
                 ))}
@@ -180,13 +164,16 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
             <tbody>
               {paginatedRecords.map((row, rowIdx) => (
                 <tr key={rowIdx}>
-                  {columns.map((col) => (
-                    <td key={col.name}>
-                      {row[col.name] !== undefined && row[col.name] !== null
-                        ? String(row[col.name])
-                        : '-'}
-                    </td>
-                  ))}
+                  {columns.map((col) => {
+                    const rawVal = row[col.name];
+                    const isNum = col.type === 'numeric' && typeof rawVal === 'number';
+                    const displayVal = rawVal !== undefined && rawVal !== null ? String(rawVal) : '-';
+                    return (
+                      <td key={col.name} style={{ fontWeight: isNum ? 700 : 500, fontFamily: isNum ? 'var(--font-mono)' : 'inherit' }}>
+                        {displayVal}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
@@ -221,7 +208,7 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, records, fileName
             >
               <ChevronLeft size={16} />
             </button>
-            <span>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
               {currentPage} / {totalPages}
             </span>
             <button

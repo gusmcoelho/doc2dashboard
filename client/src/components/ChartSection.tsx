@@ -9,13 +9,10 @@ import {
   Cell,
   AreaChart,
   Area,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from 'recharts';
 import { BarChart3, PieChart as PieIcon, TrendingUp } from 'lucide-react';
 
@@ -23,25 +20,17 @@ interface ChartSectionProps {
   charts: ChartConfig[];
 }
 
-const COLORS = [
-  '#2563eb',
-  '#7c3aed',
-  '#059669',
-  '#d97706',
-  '#e11d48',
-  '#0284c7',
-  '#db2777',
-  '#0d9488',
-];
+const COLORS = ['#2563eb', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
 const customTooltipStyle = {
   backgroundColor: '#ffffff',
   border: '1px solid #e2e8f0',
-  borderRadius: '8px',
+  borderRadius: '10px',
   color: '#0f172a',
   fontSize: '0.85rem',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-  padding: '8px 12px',
+  fontWeight: 600,
+  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+  padding: '8px 14px',
 };
 
 export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
@@ -50,12 +39,12 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
   const getChartIcon = (type: string) => {
     switch (type) {
       case 'pie':
-        return <PieIcon size={18} className="chart-icon-header" />;
+        return <PieIcon size={18} />;
       case 'line':
       case 'area':
-        return <TrendingUp size={18} className="chart-icon-header" />;
+        return <TrendingUp size={18} />;
       default:
-        return <BarChart3 size={18} className="chart-icon-header" />;
+        return <BarChart3 size={18} />;
     }
   };
 
@@ -64,26 +53,27 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
       case 'bar':
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chart.data} margin={{ top: 10, right: 20, left: 0, bottom: 25 }}>
+            <BarChart data={chart.data} margin={{ top: 15, right: 20, left: -10, bottom: 25 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey={chart.xAxisKey}
-                stroke="#64748b"
+                stroke="#94a3b8"
                 fontSize={11}
+                fontWeight={600}
                 tickLine={false}
                 interval={0}
                 angle={-20}
                 textAnchor="end"
               />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
-              <Tooltip contentStyle={customTooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: '0.8rem', paddingTop: '8px' }} />
-              {chart.yAxisKeys.map((key, idx) => (
+              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} />
+              <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: '#f8fafc' }} />
+              {chart.yAxisKeys.map((key) => (
                 <Bar
                   key={key}
                   dataKey={key}
-                  fill={COLORS[idx % COLORS.length]}
-                  radius={[4, 4, 0, 0]}
+                  fill="#2563eb"
+                  radius={[6, 6, 0, 0]}
+                  barSize={38}
                 />
               ))}
             </BarChart>
@@ -92,90 +82,91 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
 
       case 'pie':
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={chart.data}
-                dataKey={chart.yAxisKeys[0] || 'value'}
-                nameKey={chart.xAxisKey || 'name'}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={95}
-                paddingAngle={3}
-              >
-                {chart.data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={customTooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: '0.8rem', paddingTop: '8px' }} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="donut-split-layout">
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={chart.data}
+                  dataKey={chart.yAxisKeys[0] || 'value'}
+                  nameKey={chart.xAxisKey || 'name'}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={95}
+                  paddingAngle={3}
+                >
+                  {chart.data.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={customTooltipStyle} />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div className="donut-list-items">
+              {chart.data.slice(0, 5).map((item, idx) => {
+                const color = COLORS[idx % COLORS.length];
+                const pct = item.percentage || 0;
+                return (
+                  <div key={idx} className="donut-list-row">
+                    <div className="donut-list-meta">
+                      <span className="donut-item-label">
+                        <span className="donut-dot" style={{ backgroundColor: color }} />
+                        <span>{item.name || item[chart.xAxisKey]}</span>
+                      </span>
+                      <span className="donut-item-value">
+                        {typeof item.value === 'number' ? item.value.toLocaleString('pt-BR') : item.value}
+                        {pct > 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '6px' }}>({pct}%)</span>}
+                      </span>
+                    </div>
+                    <div className="donut-track">
+                      <div
+                        className="donut-progress"
+                        style={{ width: `${Math.min(100, pct || 20)}%`, backgroundColor: color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         );
 
       case 'line':
-        return (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chart.data} margin={{ top: 10, right: 20, left: 0, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis
-                dataKey={chart.xAxisKey}
-                stroke="#64748b"
-                fontSize={11}
-                tickLine={false}
-                angle={-20}
-                textAnchor="end"
-              />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
-              <Tooltip contentStyle={customTooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: '0.8rem', paddingTop: '8px' }} />
-              {chart.yAxisKeys.map((key, idx) => (
-                <Line
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={COLORS[idx % COLORS.length]}
-                  strokeWidth={2.5}
-                  dot={{ r: 4, fill: COLORS[idx % COLORS.length] }}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        );
-
       case 'area':
       default:
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chart.data} margin={{ top: 10, right: 20, left: 0, bottom: 25 }}>
+            <AreaChart data={chart.data} margin={{ top: 15, right: 20, left: -10, bottom: 25 }}>
               <defs>
-                <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                <linearGradient id="areaGradientPrimary" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey={chart.xAxisKey}
-                stroke="#64748b"
+                stroke="#94a3b8"
                 fontSize={11}
+                fontWeight={600}
                 tickLine={false}
                 angle={-20}
                 textAnchor="end"
               />
-              <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} />
               <Tooltip contentStyle={customTooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: '0.8rem', paddingTop: '8px' }} />
               {chart.yAxisKeys.map((key) => (
                 <Area
                   key={key}
                   type="monotone"
                   dataKey={key}
                   stroke="#2563eb"
-                  strokeWidth={2}
+                  strokeWidth={3}
                   fillOpacity={1}
-                  fill="url(#areaGradient)"
+                  fill="url(#areaGradientPrimary)"
+                  dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#ffffff' }}
+                  activeDot={{ r: 6, fill: '#1d4ed8' }}
                 />
               ))}
             </AreaChart>
@@ -203,11 +194,11 @@ export const ChartSection: React.FC<ChartSectionProps> = ({ charts }) => {
             className={`chart-card ${charts.length % 2 === 1 && idx === charts.length - 1 ? 'chart-card-full' : ''}`}
           >
             <div className="chart-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {getChartIcon(chart.type)}
-                <div>
+              <div className="chart-header-left">
+                <div className="chart-icon-box">{getChartIcon(chart.type)}</div>
+                <div className="chart-title-block">
                   <h3 className="chart-title">{chart.title}</h3>
-                  {chart.description && <p className="chart-desc">{chart.description}</p>}
+                  {chart.description && <span className="chart-desc">{chart.description}</span>}
                 </div>
               </div>
             </div>

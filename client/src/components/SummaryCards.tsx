@@ -1,14 +1,6 @@
 import React from 'react';
 import { SummaryCard } from '../types';
-import {
-  Layers,
-  DollarSign,
-  Calculator,
-  Award,
-  Calendar,
-  BarChart3,
-  HelpCircle,
-} from 'lucide-react';
+import { Layers, DollarSign, Calculator, Award, Calendar, BarChart3, TrendingUp, HelpCircle } from 'lucide-react';
 
 interface SummaryCardsProps {
   cards: SummaryCard[];
@@ -21,39 +13,45 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ cards }) => {
     switch (type) {
       case 'count':
         return {
-          icon: <Layers size={16} />,
-          badge: 'Total de Linhas',
+          icon: <Layers size={18} />,
+          subhead: 'Registros',
           tooltip: 'Quantidade total de registros extraídos do documento',
+          trendLabel: 'Documento ativo',
         };
       case 'total':
         return {
-          icon: <DollarSign size={16} />,
-          badge: 'Soma Total',
+          icon: <DollarSign size={18} />,
+          subhead: 'Total Consolidado',
           tooltip: 'Soma acumulada de todos os valores numéricos desta coluna',
+          trendLabel: 'Soma global',
         };
       case 'average':
         return {
-          icon: <Calculator size={16} />,
-          badge: 'Média',
+          icon: <Calculator size={18} />,
+          subhead: 'Média por Registro',
           tooltip: 'Média aritmética calculada para os valores desta coluna',
+          trendLabel: 'Média calculada',
         };
       case 'highlight':
         return {
-          icon: <Award size={16} />,
-          badge: 'Mais Frequente',
+          icon: <Award size={18} />,
+          subhead: 'Destaque Principal',
           tooltip: 'Item com maior número de ocorrências nesta coluna',
+          trendLabel: 'Maior frequência',
         };
       case 'dateRange':
         return {
-          icon: <Calendar size={16} />,
-          badge: 'Período',
+          icon: <Calendar size={18} />,
+          subhead: 'Linha do Tempo',
           tooltip: 'Intervalo entre a primeira e a última data identificada',
+          trendLabel: 'Período coberto',
         };
       default:
         return {
-          icon: <BarChart3 size={16} />,
-          badge: 'Métrica',
+          icon: <BarChart3 size={18} />,
+          subhead: 'Indicador',
           tooltip: 'Estatística calculada a partir dos dados do documento',
+          trendLabel: 'Indicador direto',
         };
     }
   };
@@ -75,26 +73,31 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ cards }) => {
           return (
             <div key={card.id} className="kpi-card" title={info.tooltip}>
               <div className="kpi-header">
-                <span className="kpi-title" title={card.title}>
-                  {card.title}
-                </span>
-                <span className={`kpi-badge ${card.type}`}>
-                  {info.icon}
-                  <span>{info.badge}</span>
-                </span>
-              </div>
-              <div className="kpi-value">{card.value}</div>
-              {card.subtitle && (
-                <div className="kpi-subtitle">
-                  <span>{card.subtitle}</span>
-                  <span
-                    title={info.tooltip}
-                    style={{ display: 'inline-flex', alignItems: 'center' }}
-                  >
-                    <HelpCircle size={12} className="help-icon" />
+                <div className="kpi-title-block">
+                  <span className="kpi-subhead">{info.subhead}</span>
+                  <span className="kpi-title" title={card.title}>
+                    {card.title}
                   </span>
                 </div>
-              )}
+                <div className={`kpi-icon-box ${card.type}`}>{info.icon}</div>
+              </div>
+
+              <div className="kpi-value">{card.value}</div>
+
+              <div className="kpi-footer">
+                <span className="trend-badge">
+                  <TrendingUp size={13} />
+                  <span>{info.trendLabel}</span>
+                </span>
+                {card.subtitle && (
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    • {card.subtitle}
+                  </span>
+                )}
+                <span title={info.tooltip} style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 'auto' }}>
+                  <HelpCircle size={12} className="help-icon" />
+                </span>
+              </div>
             </div>
           );
         })}
